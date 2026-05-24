@@ -68,8 +68,6 @@ El seed crea:
 - Vendedor: `vendedor@barstocker.com`
 - Contrasena para ambos: `BarStocker123!`
 
-Si `SUPABASE_SERVICE_ROLE_KEY` esta configurada, el seed crea estos usuarios en Supabase Auth. Si no, crealos manualmente con la misma contrasena; la app vincula el perfil por correo al iniciar sesion.
-
 ## Pruebas
 
 Unitarias:
