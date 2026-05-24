@@ -72,7 +72,7 @@ export function AccountForm({ user }: AccountFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="account-password">Nueva contrasena</Label>
+            <Label htmlFor="account-password">Nueva contraseña</Label>
             <Input
               id="account-password"
               type="password"
