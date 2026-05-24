@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
@@ -11,6 +12,7 @@ import {
   Package,
   UserCircle,
   Search,
+  Loader2,
   ShoppingCart,
   Truck,
   Users,
@@ -42,6 +44,14 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
+type SearchResult = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  href: string;
+};
+
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "VENDEDOR"] },
   { href: "/cuenta", label: "Mi cuenta", icon: UserCircle, roles: ["ADMIN", "VENDEDOR"] },
@@ -63,6 +73,11 @@ export function AppShell({ user, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
+  const searchBoxRef = useRef<HTMLFormElement>(null);
+  const [globalQuery, setGlobalQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const visibleNav = navItems.filter((item) => item.roles.includes(user.role));
   const initials = user.name
     .split(" ")
@@ -76,6 +91,69 @@ export function AppShell({ user, children }: AppShellProps) {
     toast.success("Sesion cerrada correctamente.");
     router.replace("/login");
     router.refresh();
+  }
+
+  useEffect(() => {
+    const trimmed = globalQuery.trim();
+    if (trimmed.length < 2) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const response = await fetch(
+          `/api/busqueda?q=${encodeURIComponent(trimmed)}`,
+          { signal: controller.signal },
+        );
+        const data = await response.json();
+        setSearchResults(data.results ?? []);
+        setSearchOpen(true);
+      } catch {
+        if (!controller.signal.aborted) {
+          setSearchResults([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsSearching(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [globalQuery]);
+
+  useEffect(() => {
+    function closeOnClickOutside(event: MouseEvent) {
+      if (
+        searchBoxRef.current &&
+        !searchBoxRef.current.contains(event.target as Node)
+      ) {
+        setSearchOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", closeOnClickOutside);
+    return () => document.removeEventListener("mousedown", closeOnClickOutside);
+  }, []);
+
+  function submitGlobalSearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const firstResult = searchResults[0];
+
+    if (firstResult) {
+      setSearchOpen(false);
+      router.push(firstResult.href);
+      return;
+    }
+
+    if (globalQuery.trim()) {
+      router.push(`/productos?buscar=${encodeURIComponent(globalQuery.trim())}`);
+    }
   }
 
   return (
@@ -131,7 +209,11 @@ export function AppShell({ user, children }: AppShellProps) {
               </Link>
             </div>
 
-            <div className="relative w-full max-w-xl">
+            <form
+              ref={searchBoxRef}
+              className="relative w-full max-w-xl"
+              onSubmit={submitGlobalSearch}
+            >
               <Search
                 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
                 aria-hidden="true"
@@ -139,9 +221,57 @@ export function AppShell({ user, children }: AppShellProps) {
               <Input
                 aria-label="Buscar en BarStocker"
                 placeholder="Buscar productos, ventas o proveedores"
-                className="pl-9"
+                className="pl-9 pr-9"
+                value={globalQuery}
+                onFocus={() => setSearchOpen(true)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setGlobalQuery(value);
+                  if (value.trim().length < 2) {
+                    setSearchResults([]);
+                    setIsSearching(false);
+                  }
+                }}
               />
-            </div>
+              {isSearching ? (
+                <Loader2
+                  className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
+                  aria-hidden="true"
+                />
+              ) : null}
+              {searchOpen && globalQuery.trim().length >= 2 ? (
+                <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-lg border bg-white shadow-lg">
+                  {searchResults.length ? (
+                    <div className="max-h-96 overflow-y-auto p-2">
+                      {searchResults.map((result) => (
+                        <Link
+                          key={`${result.type}-${result.id}`}
+                          href={result.href}
+                          className="block rounded-md px-3 py-2 hover:bg-accent"
+                          onClick={() => setSearchOpen(false)}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="truncate text-sm font-semibold">
+                              {result.title}
+                            </p>
+                            <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+                              {result.type}
+                            </span>
+                          </div>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {result.description}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-sm text-muted-foreground">
+                      {isSearching ? "Buscando..." : "No se encontraron resultados."}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </form>
 
             <div className="flex items-center justify-between gap-3">
               <nav

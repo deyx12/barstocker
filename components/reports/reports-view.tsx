@@ -91,46 +91,108 @@ export function ReportsView({
     router.push(`/reportes?${params.toString()}`);
   }
 
-  function exportCsv() {
-    const lines = [
-      "Reporte de inventario",
-      ["Codigo", "Nombre", "Categoria", "Stock", "Stock minimo", "Precio", "Estado", "Proveedor"].join(","),
-      ...products.map((product) =>
-        [
-          product.code,
-          product.name,
-          product.category,
-          product.stock,
-          product.minStock,
-          product.price,
-          product.status,
-          product.supplierName,
-        ]
-          .map(csvCell)
-          .join(","),
-      ),
-      "",
-      "Reporte de ventas",
-      ["Comprobante", "Vendedor", "Fecha", "Productos", "Total"].join(","),
-      ...sales.map((sale) =>
-        [
-          sale.saleNumber,
-          sale.sellerName,
-          sale.createdAt,
-          sale.products,
-          sale.total,
-        ]
-          .map(csvCell)
-          .join(","),
-      ),
-    ];
-    const blob = new Blob([lines.join("\n")], {
-      type: "text/csv;charset=utf-8",
+  function exportExcel() {
+    const generatedAt = new Date().toLocaleString("es-CO");
+    const html = `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: Arial, sans-serif; color: #172033; }
+            h1 { color: #1d4ed8; margin-bottom: 4px; }
+            h2 { margin-top: 24px; color: #1f3558; }
+            .muted { color: #64748b; font-size: 12px; }
+            table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+            th { background: #1d4ed8; color: #ffffff; font-weight: 700; }
+            th, td { border: 1px solid #dbe3ef; padding: 8px; vertical-align: top; }
+            tr:nth-child(even) td { background: #f8fafc; }
+            .number { text-align: right; }
+            .summary td { font-weight: 700; background: #eaf1fb; }
+          </style>
+        </head>
+        <body>
+          <h1>BarStocker Web</h1>
+          <div class="muted">Reporte generado: ${escapeHtml(generatedAt)}</div>
+          <div class="muted">Rango: ${escapeHtml(from || "Sin inicio")} - ${escapeHtml(to || "Sin fin")}</div>
+
+          <h2>Resumen</h2>
+          <table class="summary">
+            <tr>
+              <td>Valor de inventario</td>
+              <td>Productos</td>
+              <td>Bajo stock</td>
+              <td>Ventas</td>
+              <td>Total vendido</td>
+            </tr>
+            <tr>
+              <td>${escapeHtml(formatCurrency(summary.inventoryValue))}</td>
+              <td class="number">${summary.products}</td>
+              <td class="number">${summary.lowStock}</td>
+              <td class="number">${summary.salesCount}</td>
+              <td>${escapeHtml(formatCurrency(summary.salesTotal))}</td>
+            </tr>
+          </table>
+
+          <h2>Reporte de inventario</h2>
+          <table>
+            <tr>
+              <th>Codigo</th>
+              <th>Nombre</th>
+              <th>Categoria</th>
+              <th>Proveedor</th>
+              <th>Stock</th>
+              <th>Stock minimo</th>
+              <th>Estado</th>
+              <th>Precio</th>
+              <th>Valor inventario</th>
+            </tr>
+            ${products
+              .map(
+                (product) => `<tr>
+                  <td>${escapeHtml(product.code)}</td>
+                  <td>${escapeHtml(product.name)}</td>
+                  <td>${escapeHtml(product.category)}</td>
+                  <td>${escapeHtml(product.supplierName)}</td>
+                  <td class="number">${product.stock}</td>
+                  <td class="number">${product.minStock}</td>
+                  <td>${escapeHtml(product.status)}</td>
+                  <td>${escapeHtml(formatCurrency(product.price))}</td>
+                  <td>${escapeHtml(formatCurrency(product.price * product.stock))}</td>
+                </tr>`,
+              )
+              .join("")}
+          </table>
+
+          <h2>Reporte de ventas</h2>
+          <table>
+            <tr>
+              <th>Comprobante</th>
+              <th>Vendedor</th>
+              <th>Fecha</th>
+              <th>Productos</th>
+              <th>Total</th>
+            </tr>
+            ${sales
+              .map(
+                (sale) => `<tr>
+                  <td>${escapeHtml(sale.saleNumber)}</td>
+                  <td>${escapeHtml(sale.sellerName)}</td>
+                  <td>${escapeHtml(formatDateTime(sale.createdAt))}</td>
+                  <td>${escapeHtml(sale.products)}</td>
+                  <td>${escapeHtml(formatCurrency(sale.total))}</td>
+                </tr>`,
+              )
+              .join("")}
+          </table>
+        </body>
+      </html>`;
+    const blob = new Blob([html], {
+      type: "application/vnd.ms-excel;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "barstocker-reportes.csv";
+    link.download = "barstocker-reportes.xls";
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -160,9 +222,9 @@ export function ReportsView({
           />
         </div>
         <Button type="submit">Aplicar filtros</Button>
-        <Button type="button" variant="outline" onClick={exportCsv}>
+        <Button type="button" variant="outline" onClick={exportExcel}>
           <Download className="size-4" aria-hidden="true" />
-          Exportar CSV
+          Exportar Excel
         </Button>
       </form>
 
@@ -256,6 +318,10 @@ export function ReportsView({
   );
 }
 
-function csvCell(value: string | number) {
-  return `"${String(value).replaceAll('"', '""')}"`;
+function escapeHtml(value: string | number) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }

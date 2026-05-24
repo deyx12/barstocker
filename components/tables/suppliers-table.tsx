@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Edit, Plus, Search, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -59,13 +60,17 @@ const defaultValues: SupplierFormValues = {
 
 export function SuppliersTable({
   initialSuppliers,
+  initialQuery = "",
 }: {
   initialSuppliers: SupplierRow[];
+  initialQuery?: string;
 }) {
   const [suppliers, setSuppliers] = useState(initialSuppliers);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<SupplierRow | null>(null);
+  const [supplierToDelete, setSupplierToDelete] = useState<SupplierRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     register,
     handleSubmit,
@@ -84,7 +89,8 @@ export function SuppliersTable({
       (supplier) =>
         !normalized ||
         supplier.name.toLowerCase().includes(normalized) ||
-        supplier.email.toLowerCase().includes(normalized),
+        supplier.email.toLowerCase().includes(normalized) ||
+        supplier.nit.toLowerCase().includes(normalized),
     );
   }, [suppliers, query]);
 
@@ -133,19 +139,14 @@ export function SuppliersTable({
     setOpen(false);
   }
 
-  async function deleteSupplier(supplier: SupplierRow) {
-    const confirmed = window.confirm(
-      `Confirma que deseas eliminar o inactivar el proveedor "${supplier.name}".`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    const response = await fetch(`/api/proveedores/${supplier.id}`, {
+  async function deleteSupplier() {
+    if (!supplierToDelete) return;
+    setIsDeleting(true);
+    const response = await fetch(`/api/proveedores/${supplierToDelete.id}`, {
       method: "DELETE",
     });
     const data = await response.json();
+    setIsDeleting(false);
 
     if (!response.ok) {
       toast.error(data.message || "No se pudo eliminar el proveedor.");
@@ -157,11 +158,15 @@ export function SuppliersTable({
         current.map((item) => (item.id === data.supplier.id ? data.supplier : item)),
       );
       toast.success(data.message || "Proveedor inactivado.");
+      setSupplierToDelete(null);
       return;
     }
 
-    setSuppliers((current) => current.filter((item) => item.id !== supplier.id));
+    setSuppliers((current) =>
+      current.filter((item) => item.id !== supplierToDelete.id),
+    );
     toast.success("Proveedor eliminado.");
+    setSupplierToDelete(null);
   }
 
   return (
@@ -226,7 +231,7 @@ export function SuppliersTable({
                         type="button"
                         variant="destructive"
                         size="sm"
-                        onClick={() => deleteSupplier(supplier)}
+                        onClick={() => setSupplierToDelete(supplier)}
                       >
                         <Trash2 className="size-4" aria-hidden="true" />
                         Eliminar
@@ -314,6 +319,18 @@ export function SuppliersTable({
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(supplierToDelete)}
+        title="Confirmar eliminacion"
+        description={`El proveedor "${supplierToDelete?.name ?? ""}" se eliminara si no tiene productos asociados; de lo contrario quedara inactivo.`}
+        confirmText="Eliminar proveedor"
+        isLoading={isDeleting}
+        onOpenChange={(value) => {
+          if (!value) setSupplierToDelete(null);
+        }}
+        onConfirm={deleteSupplier}
+      />
     </div>
   );
 }

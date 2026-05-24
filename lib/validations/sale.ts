@@ -9,9 +9,23 @@ export const saleSchema = z.object({
   customerName: z
     .string()
     .trim()
-    .min(2, "El nombre del cliente debe tener al menos 2 caracteres."),
-  customerDocument: z.string().trim().optional().or(z.literal("")),
-  customerPhone: z.string().trim().optional().or(z.literal("")),
+    .min(3, "El nombre del cliente debe tener al menos 3 caracteres.")
+    .max(80, "El nombre del cliente no puede superar 80 caracteres."),
+  customerDocument: z
+    .string()
+    .trim()
+    .min(5, "El documento o NIT debe tener al menos 5 caracteres.")
+    .max(30, "El documento o NIT no puede superar 30 caracteres.")
+    .regex(
+      /^[A-Za-z0-9.\-\s]+$/,
+      "Usa solo letras, numeros, puntos, guiones y espacios.",
+    ),
+  customerPhone: z
+    .string()
+    .trim()
+    .min(7, "El telefono debe tener al menos 7 caracteres.")
+    .max(20, "El telefono no puede superar 20 caracteres.")
+    .regex(/^[0-9+\-\s()]+$/, "Ingresa un telefono valido."),
   items: z
     .array(saleLineSchema)
     .min(1, "Agrega al menos un producto a la venta."),

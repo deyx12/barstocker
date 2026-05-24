@@ -7,8 +7,13 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function SalesHistoryPage() {
+type SalesHistoryPageProps = {
+  searchParams: Promise<{ buscar?: string }>;
+};
+
+export default async function SalesHistoryPage({ searchParams }: SalesHistoryPageProps) {
   const { profile } = await requirePageSession([Role.ADMIN, Role.VENDEDOR]);
+  const params = await searchParams;
   const [sales, sellers] = await Promise.all([
     prisma.sale.findMany({
       include: {
@@ -29,10 +34,13 @@ export default async function SalesHistoryPage() {
         description="Consulta ventas realizadas, vendedor, estado y detalle de productos."
       />
       <SalesHistoryTable
+        initialQuery={params.buscar ?? ""}
         sellers={sellers.map((seller) => ({ id: seller.id, name: seller.name }))}
         sales={sales.map((sale) => ({
           id: sale.id,
           saleNumber: sale.saleNumber,
+          customerName: sale.customerName ?? "",
+          customerDocument: sale.customerDocument,
           sellerId: sale.userId,
           sellerName: sale.user.name,
           total: Number(sale.total),

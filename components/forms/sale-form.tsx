@@ -171,47 +171,86 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
 
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF();
-    let y = 18;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 14;
+    let y = 16;
 
-    doc.setFontSize(18);
-    doc.text("BarStocker Web", 14, y);
-    y += 8;
-    doc.setFontSize(12);
-    doc.text("Comprobante de venta", 14, y);
-    y += 10;
-    doc.text(`Numero: ${receipt.saleNumber}`, 14, y);
-    y += 7;
-    doc.text(`Fecha: ${formatDateTime(receipt.createdAt)}`, 14, y);
-    y += 7;
-    doc.text(`Cliente: ${receipt.customerName}`, 14, y);
-    y += 7;
-    if (receipt.customerDocument) {
-      doc.text(`Documento/NIT: ${receipt.customerDocument}`, 14, y);
-      y += 7;
-    }
-    if (receipt.customerPhone) {
-      doc.text(`Telefono: ${receipt.customerPhone}`, 14, y);
-      y += 7;
-    }
-
-    y += 4;
+    doc.setFillColor(29, 78, 216);
+    doc.rect(0, 0, pageWidth, 34, "F");
+    doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.text("Producto", 14, y);
-    doc.text("Cant.", 118, y);
-    doc.text("Subtotal", 150, y);
+    doc.setFontSize(18);
+    doc.text("BarStocker Web", margin, y);
+    doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    y += 7;
+    doc.text("Comprobante de venta", margin, y + 8);
+    doc.text(receipt.saleNumber, pageWidth - margin, y + 8, { align: "right" });
 
-    receipt.details.forEach((detail) => {
-      doc.text(`${detail.product.code} - ${detail.product.name}`.slice(0, 48), 14, y);
-      doc.text(String(detail.quantity), 120, y);
-      doc.text(formatCurrency(detail.subtotal), 150, y);
-      y += 7;
+    y = 48;
+    doc.setTextColor(15, 23, 42);
+    doc.setDrawColor(219, 227, 239);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(margin, y - 8, pageWidth - margin * 2, 36, 2, 2, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("Cliente", margin + 4, y);
+    doc.text("Fecha", pageWidth / 2, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(receipt.customerName, margin + 4, y + 8);
+    doc.text(formatDateTime(receipt.createdAt), pageWidth / 2, y + 8);
+    doc.text(`Documento/NIT: ${receipt.customerDocument || "No registrado"}`, margin + 4, y + 16);
+    doc.text(`Telefono: ${receipt.customerPhone || "No registrado"}`, pageWidth / 2, y + 16);
+
+    y += 48;
+    doc.setFillColor(30, 64, 175);
+    doc.rect(margin, y - 7, pageWidth - margin * 2, 9, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("Producto", margin + 3, y);
+    doc.text("Cant.", 122, y, { align: "right" });
+    doc.text("Precio", 148, y, { align: "right" });
+    doc.text("Subtotal", pageWidth - margin - 3, y, { align: "right" });
+
+    y += 8;
+    doc.setTextColor(15, 23, 42);
+    doc.setFont("helvetica", "normal");
+    receipt.details.forEach((detail, index) => {
+      if (y > 260) {
+        doc.addPage();
+        y = 20;
+      }
+
+      if (index % 2 === 0) {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(margin, y - 5, pageWidth - margin * 2, 8, "F");
+      }
+
+      const productName = `${detail.product.code} - ${detail.product.name}`;
+      doc.text(doc.splitTextToSize(productName, 85)[0], margin + 3, y);
+      doc.text(String(detail.quantity), 122, y, { align: "right" });
+      doc.text(formatCurrency(detail.unitPrice), 148, y, { align: "right" });
+      doc.text(formatCurrency(detail.subtotal), pageWidth - margin - 3, y, {
+        align: "right",
+      });
+      y += 8;
     });
 
-    y += 4;
+    y += 5;
+    doc.setDrawColor(30, 64, 175);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
     doc.setFont("helvetica", "bold");
-    doc.text(`Total: ${formatCurrency(receipt.total)}`, 14, y);
+    doc.setFontSize(14);
+    doc.text("Total", pageWidth - 70, y);
+    doc.text(formatCurrency(receipt.total), pageWidth - margin, y, {
+      align: "right",
+    });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Documento generado por BarStocker Web", margin, 287);
     doc.save(`${receipt.saleNumber}.pdf`);
   }
 

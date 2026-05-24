@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "BarStocker Web",
   description: "Sistema de gestion de inventario y ventas para bares.",
+  authors: [{ name: "Deyby Garzón" }],
+  other: {
+    developer: "Deyby Garzón",
+  },
 };
 
 export default function RootLayout({

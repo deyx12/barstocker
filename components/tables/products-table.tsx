@@ -11,6 +11,7 @@ import {
 import { Edit, Plus, Search, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ type ProductsTableProps = {
   initialProducts: ProductRow[];
   suppliers: SupplierOption[];
   canManage: boolean;
+  initialQuery?: string;
 };
 
 const productStatusOptions = [
@@ -95,13 +97,16 @@ export function ProductsTable({
   initialProducts,
   suppliers,
   canManage,
+  initialQuery = "",
 }: ProductsTableProps) {
   const [products, setProducts] = useState(initialProducts);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState("ALL");
   const [status, setStatus] = useState("ALL");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ProductRow | null>(null);
+  const [productToDelete, setProductToDelete] = useState<ProductRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     register,
     handleSubmit,
@@ -170,7 +175,7 @@ export function ProductsTable({
                 type="button"
                 variant="destructive"
                 size="sm"
-                onClick={() => deleteProduct(row.original)}
+                onClick={() => setProductToDelete(row.original)}
               >
                 <Trash2 className="size-4" aria-hidden="true" />
                 Eliminar
@@ -250,19 +255,14 @@ export function ProductsTable({
     setOpen(false);
   }
 
-  async function deleteProduct(product: ProductRow) {
-    const confirmed = window.confirm(
-      `Confirma que deseas eliminar o inactivar el producto "${product.name}".`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    const response = await fetch(`/api/productos/${product.id}`, {
+  async function deleteProduct() {
+    if (!productToDelete) return;
+    setIsDeleting(true);
+    const response = await fetch(`/api/productos/${productToDelete.id}`, {
       method: "DELETE",
     });
     const data = await response.json();
+    setIsDeleting(false);
 
     if (!response.ok) {
       toast.error(data.message || "No se pudo eliminar el producto.");
@@ -275,11 +275,15 @@ export function ProductsTable({
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
       toast.success(data.message || "Producto marcado como inactivo.");
+      setProductToDelete(null);
       return;
     }
 
-    setProducts((current) => current.filter((item) => item.id !== product.id));
+    setProducts((current) =>
+      current.filter((item) => item.id !== productToDelete.id),
+    );
     toast.success("Producto eliminado.");
+    setProductToDelete(null);
   }
 
   return (
@@ -494,6 +498,18 @@ export function ProductsTable({
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(productToDelete)}
+        title="Confirmar eliminacion"
+        description={`El producto "${productToDelete?.name ?? ""}" se eliminara si no tiene historial; de lo contrario quedara inactivo.`}
+        confirmText="Eliminar producto"
+        isLoading={isDeleting}
+        onOpenChange={(value) => {
+          if (!value) setProductToDelete(null);
+        }}
+        onConfirm={deleteProduct}
+      />
     </div>
   );
 }

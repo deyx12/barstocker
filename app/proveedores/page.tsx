@@ -7,8 +7,13 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function SuppliersPage() {
+type SuppliersPageProps = {
+  searchParams: Promise<{ buscar?: string }>;
+};
+
+export default async function SuppliersPage({ searchParams }: SuppliersPageProps) {
   const { profile } = await requirePageSession([Role.ADMIN]);
+  const params = await searchParams;
   const suppliers = await prisma.supplier.findMany({
     orderBy: { name: "asc" },
   });
@@ -20,6 +25,7 @@ export default async function SuppliersPage() {
         description="Administra proveedores activos, datos de contacto y estado."
       />
       <SuppliersTable
+        initialQuery={params.buscar ?? ""}
         initialSuppliers={suppliers.map((supplier) => ({
           id: supplier.id,
           name: supplier.name,

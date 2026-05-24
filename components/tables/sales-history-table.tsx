@@ -32,6 +32,8 @@ import { formatCurrency, formatDateTime } from "@/lib/utils";
 export type SaleHistoryRow = {
   id: string;
   saleNumber: string;
+  customerName: string;
+  customerDocument: string | null;
   sellerId: string;
   sellerName: string;
   total: number;
@@ -55,10 +57,15 @@ type SellerOption = {
 type SalesHistoryTableProps = {
   sales: SaleHistoryRow[];
   sellers: SellerOption[];
+  initialQuery?: string;
 };
 
-export function SalesHistoryTable({ sales, sellers }: SalesHistoryTableProps) {
-  const [query, setQuery] = useState("");
+export function SalesHistoryTable({
+  sales,
+  sellers,
+  initialQuery = "",
+}: SalesHistoryTableProps) {
+  const [query, setQuery] = useState(initialQuery);
   const [sellerId, setSellerId] = useState("ALL");
   const [status, setStatus] = useState("ALL");
   const [from, setFrom] = useState("");
@@ -73,7 +80,9 @@ export function SalesHistoryTable({ sales, sellers }: SalesHistoryTableProps) {
       const matchesQuery =
         !normalizedQuery ||
         sale.saleNumber.toLowerCase().includes(normalizedQuery) ||
-        sale.sellerName.toLowerCase().includes(normalizedQuery);
+        sale.sellerName.toLowerCase().includes(normalizedQuery) ||
+        sale.customerName.toLowerCase().includes(normalizedQuery) ||
+        (sale.customerDocument ?? "").toLowerCase().includes(normalizedQuery);
       const matchesSeller = sellerId === "ALL" || sale.sellerId === sellerId;
       const matchesStatus = status === "ALL" || sale.status === status;
       const matchesFrom = !from || date >= from;

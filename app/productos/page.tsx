@@ -7,8 +7,13 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProductsPage() {
+type ProductsPageProps = {
+  searchParams: Promise<{ buscar?: string }>;
+};
+
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const { profile } = await requirePageSession([Role.ADMIN, Role.VENDEDOR]);
+  const params = await searchParams;
   const [products, suppliers] = await Promise.all([
     prisma.product.findMany({
       include: { supplier: true },
@@ -28,6 +33,7 @@ export default async function ProductsPage() {
       />
       <ProductsTable
         canManage={profile.role === Role.ADMIN}
+        initialQuery={params.buscar ?? ""}
         suppliers={suppliers.map((supplier) => ({
           id: supplier.id,
           name: supplier.name,
