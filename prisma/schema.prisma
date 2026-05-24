@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  VENDEDOR
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+enum ProductStatus {
+  AVAILABLE
+  LOW_STOCK
+  OUT_OF_STOCK
+  INACTIVE
+}
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum MovementType {
+  IN
+  OUT
+  SALE_ADJUSTMENT
+}
+
+model UserProfile {
+  id         String   @id @default(uuid())
+  authUserId String   @unique
+  name       String
+  email      String   @unique
+  role       Role     @default(VENDEDOR)
+  status     Status   @default(ACTIVE)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sales Sale[]
+
+  @@index([role])
+  @@index([status])
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  phone     String
+  email     String   @unique
+  address   String
+  status    Status   @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@index([status])
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  code        String        @unique
+  name        String        @unique
+  category    String
+  description String?
+  price       Decimal       @db.Decimal(10, 2)
+  stock       Int           @default(0)
+  minStock    Int           @default(0)
+  status      ProductStatus @default(AVAILABLE)
+  supplierId  String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  supplier           Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  saleDetails        SaleDetail[]
+  inventoryMovements InventoryMovement[]
+
+  @@index([category])
+  @@index([status])
+  @@index([supplierId])
+}
+
+model Sale {
+  id         String     @id @default(uuid())
+  saleNumber String     @unique
+  userId     String
+  total      Decimal    @db.Decimal(10, 2)
+  status     SaleStatus @default(COMPLETED)
+  createdAt  DateTime   @default(now())
+
+  user    UserProfile  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  details SaleDetail[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SaleDetail {
+  id        String  @id @default(uuid())
+  saleId    String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model InventoryMovement {
+  id            String       @id @default(uuid())
+  productId     String
+  type          MovementType
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  reason        String
+  createdAt     DateTime     @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@index([type])
+  @@index([createdAt])
+}

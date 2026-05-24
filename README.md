@@ -1,36 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BarStocker Web
 
-## Getting Started
+Sistema web para gestionar inventario, ventas, proveedores, usuarios y reportes de bares. Incluye autenticacion con Supabase Auth, control de acceso por roles y reglas de negocio para descontar inventario al confirmar ventas.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router + TypeScript
+- Tailwind CSS + componentes estilo shadcn/ui
+- Prisma ORM + Supabase PostgreSQL
+- Supabase Auth
+- Zod + React Hook Form
+- TanStack Table
+- Sonner
+- Lucide React
+- Vitest
+- Playwright
+- Vercel
+
+## Variables De Entorno
+
+Copia `.env.example` a `.env` y completa:
+
+```env
+DATABASE_URL=
+DIRECT_URL=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+`DATABASE_URL` debe apuntar a PostgreSQL de Supabase. `SUPABASE_SERVICE_ROLE_KEY` permite que el seed cree los usuarios de Auth de prueba; si no la configuras, crea esos usuarios manualmente en Supabase Auth.
+
+## Instalacion
+
+```bash
+npm install
+npm run db:generate
+```
+
+## Ejecucion Local
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Prisma
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Crear/aplicar migraciones en desarrollo:
 
-## Learn More
+```bash
+npm run db:migrate
+```
 
-To learn more about Next.js, take a look at the following resources:
+Aplicar migraciones en despliegue:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run db:deploy
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Ejecutar seed:
 
-## Deploy on Vercel
+```bash
+npm run db:seed
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+El seed crea:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- 1 administrador
+- 1 vendedor
+- 3 proveedores
+- 8 productos de bar
+- ventas y movimientos de inventario de ejemplo
+- productos con bajo stock y agotados
+
+## Usuarios De Prueba
+
+- Administrador: `admin@barstocker.com`
+- Vendedor: `vendedor@barstocker.com`
+- Contrasena para ambos: `BarStocker123!`
+
+Si `SUPABASE_SERVICE_ROLE_KEY` esta configurada, el seed crea estos usuarios en Supabase Auth. Si no, crealos manualmente con la misma contrasena; la app vincula el perfil por correo al iniciar sesion.
+
+## Pruebas
+
+Unitarias:
+
+```bash
+npm test
+```
+
+E2E:
+
+```bash
+npx playwright install
+npm run test:e2e
+```
+
+Las pruebas e2e de login/productos se omiten automaticamente si faltan `NEXT_PUBLIC_SUPABASE_URL` o `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Puedes sobreescribir credenciales con `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD`.
+
+## Despliegue En Vercel
+
+1. Crea un proyecto en Vercel conectado al repositorio.
+2. Configura las variables de entorno de Supabase y PostgreSQL.
+3. Ejecuta migraciones contra Supabase con `npm run db:deploy`.
+4. Ejecuta el seed una vez con `npm run db:seed` si necesitas datos iniciales.
+5. Usa el comando de build por defecto del proyecto:
+
+```bash
+npm run build
+```
+
+## Roles
+
+- `ADMIN`: acceso total a dashboard, productos, inventario, ventas, historial, proveedores, reportes y usuarios.
+- `VENDEDOR`: dashboard limitado, productos en lectura, inventario en lectura, ventas e historial. No accede a usuarios, proveedores ni reportes.
+
+## Supuestos De Primera Version
+
+- La moneda visual es COP.
+- Los usuarios se autentican en Supabase Auth y se administran como perfiles en `UserProfile`.
+- No se eliminan usuarios; se inactivan.
+- Los productos con ventas o movimientos se inactivan en lugar de eliminarse.
+- Los reportes exportan CSV; PDF queda fuera de esta version.
