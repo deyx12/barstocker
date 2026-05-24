@@ -86,18 +86,6 @@ npm run test:e2e
 
 Las pruebas e2e de login/productos se omiten automaticamente si faltan `NEXT_PUBLIC_SUPABASE_URL` o `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Puedes sobreescribir credenciales con `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD`.
 
-## Despliegue En Vercel
-
-1. Crea un proyecto en Vercel conectado al repositorio.
-2. Configura las variables de entorno de Supabase y PostgreSQL.
-3. Ejecuta migraciones contra Supabase con `npm run db:deploy`.
-4. Ejecuta el seed una vez con `npm run db:seed` si necesitas datos iniciales.
-5. Usa el comando de build por defecto del proyecto:
-
-```bash
-npm run build
-```
-
 ## Roles
 
 - `ADMIN`: acceso total a dashboard, productos, inventario, ventas, historial, proveedores, reportes y usuarios.
