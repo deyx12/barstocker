@@ -74,7 +74,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     const { id } = await context.params;
 
     if (id === auth.profile.id) {
-      return jsonError("No puedes inactivar tu propio usuario.", 422);
+      return jsonError("No puedes eliminar tu propio usuario.", 422);
     }
 
     const user = await prisma.userProfile.update({
@@ -84,7 +84,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
     return NextResponse.json({
       user,
-      message: "El usuario fue inactivado correctamente.",
+      message: "El usuario fue eliminado correctamente.",
     });
   } catch (error) {
     return handleRouteError(error);

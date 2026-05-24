@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Edit, Plus } from "lucide-react";
+import { Edit, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,8 +62,10 @@ export function UsersTable({ initialUsers }: { initialUsers: UserRow[] }) {
   const [users, setUsers] = useState(initialUsers);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<UserRow | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserRow | null>(null);
   const [form, setForm] = useState<UserFormState>(emptyForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   function openCreate() {
     setEditing(null);
@@ -80,49 +83,6 @@ export function UsersTable({ initialUsers }: { initialUsers: UserRow[] }) {
       status: user.status,
     });
     setOpen(true);
-  }
-
-  async function updateUser(
-    id: string,
-    payload: Partial<Pick<UserRow, "name" | "email" | "role" | "status">>,
-  ) {
-    if (payload.status === "INACTIVE") {
-      const user = users.find((item) => item.id === id);
-      const confirmed = window.confirm(
-        `Confirma que deseas inactivar el usuario "${user?.name ?? "seleccionado"}".`,
-      );
-
-      if (!confirmed) {
-        return;
-      }
-    }
-
-    const response = await fetch(`/api/usuarios/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-      toast.error(data.message || "No se pudo actualizar el usuario.");
-      return;
-    }
-
-    setUsers((current) =>
-      current.map((user) =>
-        user.id === id
-          ? {
-              ...user,
-              name: data.user.name,
-              email: data.user.email,
-              role: data.user.role,
-              status: data.user.status,
-            }
-          : user,
-      ),
-    );
-    toast.success("Usuario actualizado.");
   }
 
   async function submitForm(event: React.FormEvent<HTMLFormElement>) {
@@ -171,6 +131,35 @@ export function UsersTable({ initialUsers }: { initialUsers: UserRow[] }) {
     setOpen(false);
   }
 
+  async function deleteUser() {
+    if (!userToDelete) return;
+    setIsDeleting(true);
+
+    const response = await fetch(`/api/usuarios/${userToDelete.id}`, {
+      method: "DELETE",
+    });
+    const data = await response.json();
+    setIsDeleting(false);
+
+    if (!response.ok) {
+      toast.error(data.message || "No se pudo eliminar el usuario.");
+      return;
+    }
+
+    setUsers((current) =>
+      current.map((user) =>
+        user.id === data.user.id
+          ? {
+              ...user,
+              status: data.user.status,
+            }
+          : user,
+      ),
+    );
+    setUserToDelete(null);
+    toast.success(data.message || "Usuario eliminado.");
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -199,57 +188,33 @@ export function UsersTable({ initialUsers }: { initialUsers: UserRow[] }) {
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Select
-                      value={user.role}
-                      onValueChange={(role) =>
-                        updateUser(user.id, { role: role as UserRow["role"] })
-                      }
-                    >
-                      <SelectTrigger
-                        aria-label={`Cambiar rol de ${user.name}`}
-                        className="w-40"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="ADMIN">Administrador</SelectItem>
-                        <SelectItem value="VENDEDOR">Vendedor</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {user.role === "ADMIN" ? "Administrador" : "Vendedor"}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status={user.status} />
-                      <Select
-                        value={user.status}
-                        onValueChange={(status) =>
-                          updateUser(user.id, { status: status as UserRow["status"] })
-                        }
-                      >
-                        <SelectTrigger
-                          aria-label={`Cambiar estado de ${user.name}`}
-                          className="w-32"
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ACTIVE">Activo</SelectItem>
-                          <SelectItem value="INACTIVE">Inactivo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <StatusBadge status={user.status} />
                   </TableCell>
                   <TableCell>{formatDateTime(user.createdAt)}</TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEdit(user)}
-                    >
-                      <Edit className="size-4" aria-hidden="true" />
-                      Editar
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEdit(user)}
+                      >
+                        <Edit className="size-4" aria-hidden="true" />
+                        Editar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setUserToDelete(user)}
+                      >
+                        <Trash2 className="size-4" aria-hidden="true" />
+                        Eliminar
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -366,6 +331,18 @@ export function UsersTable({ initialUsers }: { initialUsers: UserRow[] }) {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(userToDelete)}
+        title="Confirmar eliminacion"
+        description={`El usuario "${userToDelete?.name ?? ""}" quedara inactivo y no podra iniciar sesion hasta que un administrador lo reactive.`}
+        confirmText="Eliminar usuario"
+        isLoading={isDeleting}
+        onOpenChange={(value) => {
+          if (!value) setUserToDelete(null);
+        }}
+        onConfirm={deleteUser}
+      />
     </div>
   );
 }

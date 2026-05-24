@@ -51,7 +51,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (pathname === "/login" && user) {
+  if (
+    pathname === "/login" &&
+    user &&
+    request.nextUrl.searchParams.get("error") !== "inactive"
+  ) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/dashboard";
     redirectUrl.search = "";
