@@ -1,4 +1,5 @@
-# BarStocker Web
+# Repositorio de Deyby Garzón
+# BarStocker Web 
 
 Sistema web para gestionar inventario, ventas, proveedores, usuarios y reportes de bares. Incluye autenticacion con Supabase Auth, control de acceso por roles y reglas de negocio para descontar inventario al confirmar ventas.
 
@@ -91,8 +92,7 @@ Las pruebas e2e de login/productos se omiten automaticamente si faltan `NEXT_PUB
 - `ADMIN`: acceso total a dashboard, productos, inventario, ventas, historial, proveedores, reportes y usuarios.
 - `VENDEDOR`: dashboard limitado, productos en lectura, inventario en lectura, ventas e historial. No accede a usuarios, proveedores ni reportes.
 
-## Supuestos De Primera Version
-
+## Caracteristicas
 - La moneda visual es COP.
 - Los usuarios se autentican en Supabase Auth y se administran como perfiles en `UserProfile`.
 - No se eliminan usuarios; se inactivan.
