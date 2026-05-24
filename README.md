@@ -16,19 +16,6 @@ Sistema web para gestionar inventario, ventas, proveedores, usuarios y reportes 
 - Playwright
 - Vercel
 
-## Variables De Entorno
-
-Copia `.env.example` a `.env` y completa:
-
-```env
-DATABASE_URL=
-DIRECT_URL=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-```
-
-`DATABASE_URL` debe apuntar a PostgreSQL de Supabase. `SUPABASE_SERVICE_ROLE_KEY` permite que el seed cree los usuarios de Auth de prueba; si no la configuras, crea esos usuarios manualmente en Supabase Auth.
 
 ## Instalacion
 
