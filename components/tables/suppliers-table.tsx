@@ -41,6 +41,7 @@ import {
 export type SupplierRow = {
   id: string;
   name: string;
+  nit: string;
   phone: string;
   email: string;
   address: string;
@@ -49,6 +50,7 @@ export type SupplierRow = {
 
 const defaultValues: SupplierFormValues = {
   name: "",
+  nit: "",
   phone: "",
   email: "",
   address: "",
@@ -96,6 +98,7 @@ export function SuppliersTable({
     setEditing(supplier);
     reset({
       name: supplier.name,
+      nit: supplier.nit,
       phone: supplier.phone,
       email: supplier.email,
       address: supplier.address,
@@ -131,6 +134,14 @@ export function SuppliersTable({
   }
 
   async function deleteSupplier(supplier: SupplierRow) {
+    const confirmed = window.confirm(
+      `Confirma que deseas eliminar o inactivar el proveedor "${supplier.name}".`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     const response = await fetch(`/api/proveedores/${supplier.id}`, {
       method: "DELETE",
     });
@@ -180,6 +191,7 @@ export function SuppliersTable({
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
+              <TableHead>NIT</TableHead>
               <TableHead>Telefono</TableHead>
               <TableHead>Correo</TableHead>
               <TableHead>Direccion</TableHead>
@@ -192,6 +204,7 @@ export function SuppliersTable({
               filteredSuppliers.map((supplier) => (
                 <TableRow key={supplier.id}>
                   <TableCell className="font-medium">{supplier.name}</TableCell>
+                  <TableCell>{supplier.nit}</TableCell>
                   <TableCell>{supplier.phone}</TableCell>
                   <TableCell>{supplier.email}</TableCell>
                   <TableCell>{supplier.address}</TableCell>
@@ -224,7 +237,7 @@ export function SuppliersTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                   No hay proveedores para mostrar.
                 </TableCell>
               </TableRow>
@@ -252,6 +265,11 @@ export function SuppliersTable({
                 <Label htmlFor="phone">Telefono</Label>
                 <Input id="phone" {...register("phone")} />
                 <FieldError message={errors.phone?.message} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nit">NIT</Label>
+                <Input id="nit" {...register("nit")} />
+                <FieldError message={errors.nit?.message} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="supplier-email">Correo</Label>

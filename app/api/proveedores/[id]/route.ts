@@ -21,12 +21,12 @@ export async function PATCH(request: Request, context: RouteContext) {
     const duplicate = await prisma.supplier.findFirst({
       where: {
         id: { not: id },
-        OR: [{ name: payload.name }, { email: payload.email }],
+        OR: [{ name: payload.name }, { email: payload.email }, { nit: payload.nit }],
       },
     });
 
     if (duplicate) {
-      return jsonError("Ya existe un proveedor con ese nombre o correo.", 409);
+      return jsonError("Ya existe un proveedor con ese nombre, correo o NIT.", 409);
     }
 
     const supplier = await prisma.supplier.update({

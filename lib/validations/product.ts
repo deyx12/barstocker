@@ -22,5 +22,9 @@ export const productSchema = z.object({
   supplierId: z.string().trim().optional().or(z.literal("")),
 });
 
+export const productUpdateSchema = productSchema.omit({ stock: true });
+
 export type ProductFormValues = z.infer<typeof productSchema>;
 export type ProductFormInput = z.input<typeof productSchema>;
+export type ProductUpdateValues = z.infer<typeof productUpdateSchema>;
+export type ProductUpdateInput = z.input<typeof productUpdateSchema>;

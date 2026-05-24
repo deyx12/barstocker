@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Minus, Plus, ReceiptText, ShoppingCart } from "lucide-react";
+import { Download, Minus, Plus, ReceiptText, ShoppingCart } from "lucide-react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { FieldError } from "@/components/field-error";
@@ -43,6 +43,9 @@ type AvailableProduct = {
 
 type Receipt = {
   saleNumber: string;
+  customerName: string;
+  customerDocument: string | null;
+  customerPhone: string | null;
   total: number;
   createdAt: string;
   details: Array<{
@@ -71,6 +74,9 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
   } = useForm<SaleFormInput, unknown, SaleFormValues>({
     resolver: zodResolver(saleSchema),
     defaultValues: {
+      customerName: "",
+      customerDocument: "",
+      customerPhone: "",
       items: [{ productId: "", quantity: 1 }],
     },
   });
@@ -120,6 +126,9 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
     const sale = data.sale;
     setReceipt({
       saleNumber: sale.saleNumber,
+      customerName: sale.customerName,
+      customerDocument: sale.customerDocument,
+      customerPhone: sale.customerPhone,
       total: Number(sale.total),
       createdAt: sale.createdAt,
       details: sale.details.map(
@@ -148,8 +157,62 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
         return detail ? { ...product, stock: detail.product.stock } : product;
       }),
     );
-    reset({ items: [{ productId: "", quantity: 1 }] });
+    reset({
+      customerName: "",
+      customerDocument: "",
+      customerPhone: "",
+      items: [{ productId: "", quantity: 1 }],
+    });
     toast.success("Venta registrada e inventario actualizado.");
+  }
+
+  async function downloadReceiptPdf() {
+    if (!receipt) return;
+
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF();
+    let y = 18;
+
+    doc.setFontSize(18);
+    doc.text("BarStocker Web", 14, y);
+    y += 8;
+    doc.setFontSize(12);
+    doc.text("Comprobante de venta", 14, y);
+    y += 10;
+    doc.text(`Numero: ${receipt.saleNumber}`, 14, y);
+    y += 7;
+    doc.text(`Fecha: ${formatDateTime(receipt.createdAt)}`, 14, y);
+    y += 7;
+    doc.text(`Cliente: ${receipt.customerName}`, 14, y);
+    y += 7;
+    if (receipt.customerDocument) {
+      doc.text(`Documento/NIT: ${receipt.customerDocument}`, 14, y);
+      y += 7;
+    }
+    if (receipt.customerPhone) {
+      doc.text(`Telefono: ${receipt.customerPhone}`, 14, y);
+      y += 7;
+    }
+
+    y += 4;
+    doc.setFont("helvetica", "bold");
+    doc.text("Producto", 14, y);
+    doc.text("Cant.", 118, y);
+    doc.text("Subtotal", 150, y);
+    doc.setFont("helvetica", "normal");
+    y += 7;
+
+    receipt.details.forEach((detail) => {
+      doc.text(`${detail.product.code} - ${detail.product.name}`.slice(0, 48), 14, y);
+      doc.text(String(detail.quantity), 120, y);
+      doc.text(formatCurrency(detail.subtotal), 150, y);
+      y += 7;
+    });
+
+    y += 4;
+    doc.setFont("helvetica", "bold");
+    doc.text(`Total: ${formatCurrency(receipt.total)}`, 14, y);
+    doc.save(`${receipt.saleNumber}.pdf`);
   }
 
   return (
@@ -160,6 +223,27 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+            <div className="rounded-lg border bg-slate-50 p-4">
+              <h2 className="mb-3 text-sm font-semibold">Informacion del cliente</h2>
+              <div className="grid gap-4 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="customerName">Nombre del cliente</Label>
+                  <Input id="customerName" {...register("customerName")} />
+                  <FieldError message={errors.customerName?.message} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customerDocument">Documento o NIT</Label>
+                  <Input id="customerDocument" {...register("customerDocument")} />
+                  <FieldError message={errors.customerDocument?.message} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customerPhone">Telefono</Label>
+                  <Input id="customerPhone" {...register("customerPhone")} />
+                  <FieldError message={errors.customerPhone?.message} />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-3">
               {fields.map((field, index) => {
                 const product = products.find(
@@ -278,6 +362,18 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
                 <p className="mt-1 text-sm text-muted-foreground">
                   {formatDateTime(receipt.createdAt)}
                 </p>
+                <p className="mt-3 text-sm text-muted-foreground">Cliente</p>
+                <p className="font-semibold">{receipt.customerName}</p>
+                {receipt.customerDocument ? (
+                  <p className="text-sm text-muted-foreground">
+                    Documento/NIT: {receipt.customerDocument}
+                  </p>
+                ) : null}
+                {receipt.customerPhone ? (
+                  <p className="text-sm text-muted-foreground">
+                    Telefono: {receipt.customerPhone}
+                  </p>
+                ) : null}
               </div>
               <Table>
                 <TableHeader>
@@ -303,6 +399,10 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
                 <span>Total</span>
                 <span>{formatCurrency(receipt.total)}</span>
               </div>
+              <Button type="button" className="w-full" onClick={downloadReceiptPdf}>
+                <Download className="size-4" aria-hidden="true" />
+                Descargar comprobante PDF
+              </Button>
             </div>
           ) : (
             <div className="flex min-h-72 flex-col items-center justify-center rounded-md border border-dashed text-center">

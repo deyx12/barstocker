@@ -116,18 +116,21 @@ async function main() {
     [
       {
         name: "Distribuidora Andes",
+        nit: "900111222-1",
         phone: "3105550181",
         email: "ventas@andesbebidas.com",
         address: "Carrera 45 # 18-20, Bogota",
       },
       {
         name: "Licores La Cava",
+        nit: "900333444-2",
         phone: "3115550192",
         email: "contacto@lacava.com",
         address: "Calle 72 # 11-45, Bogota",
       },
       {
         name: "Insumos Mixologia Pro",
+        nit: "900555666-3",
         phone: "3125550103",
         email: "hola@mixologiapro.com",
         address: "Avenida Suba # 95-30, Bogota",
@@ -248,6 +251,9 @@ async function main() {
     {
       saleNumber: "VENTA-DEMO-001",
       userId: seller.id,
+      customerName: "Cliente Barra",
+      customerDocument: "1020304050",
+      customerPhone: "3001234567",
       createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4),
       items: [
         { code: "CER-001", quantity: 6 },
@@ -257,6 +263,9 @@ async function main() {
     {
       saleNumber: "VENTA-DEMO-002",
       userId: admin.id,
+      customerName: "Mesa Reserva",
+      customerDocument: "NIT 800123456-7",
+      customerPhone: "3007654321",
       createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26),
       items: [
         { code: "GIN-001", quantity: 1 },
@@ -270,7 +279,17 @@ async function main() {
       where: { saleNumber: sampleSale.saleNumber },
     });
 
-    if (exists) continue;
+    if (exists) {
+      await prisma.sale.update({
+        where: { id: exists.id },
+        data: {
+          customerName: sampleSale.customerName,
+          customerDocument: sampleSale.customerDocument,
+          customerPhone: sampleSale.customerPhone,
+        },
+      });
+      continue;
+    }
 
     const lines = sampleSale.items.map((item) => {
       const product = productByCode.get(item.code);
@@ -292,6 +311,9 @@ async function main() {
       data: {
         saleNumber: sampleSale.saleNumber,
         userId: sampleSale.userId,
+        customerName: sampleSale.customerName,
+        customerDocument: sampleSale.customerDocument,
+        customerPhone: sampleSale.customerPhone,
         total,
         status: SaleStatus.COMPLETED,
         createdAt: sampleSale.createdAt,

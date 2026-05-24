@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Package,
+  UserCircle,
   Search,
   ShoppingCart,
   Truck,
@@ -43,6 +44,7 @@ type AppShellProps = {
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["ADMIN", "VENDEDOR"] },
+  { href: "/cuenta", label: "Mi cuenta", icon: UserCircle, roles: ["ADMIN", "VENDEDOR"] },
   { href: "/productos", label: "Productos", icon: Package, roles: ["ADMIN", "VENDEDOR"] },
   { href: "/inventario", label: "Inventario", icon: Boxes, roles: ["ADMIN", "VENDEDOR"] },
   { href: "/ventas", label: "Ventas", icon: ShoppingCart, roles: ["ADMIN", "VENDEDOR"] },
@@ -183,6 +185,12 @@ export function AppShell({ user, children }: AppShellProps) {
                     {user.role === "ADMIN" ? "Administrador" : "Vendedor"}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/cuenta">
+                      <UserCircle className="size-4" aria-hidden="true" />
+                      Mi cuenta
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="size-4" aria-hidden="true" />
                     Cerrar sesion

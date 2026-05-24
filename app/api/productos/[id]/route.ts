@@ -4,7 +4,7 @@ import { getProductStatus } from "@/lib/business";
 import { handleRouteError, jsonError, readJson } from "@/lib/api";
 import { requireApiSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { productSchema } from "@/lib/validations/product";
+import { productUpdateSchema } from "@/lib/validations/product";
 
 export const runtime = "nodejs";
 
@@ -18,7 +18,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     const { id } = await context.params;
-    const payload = productSchema.parse(await readJson(request));
+    const payload = productUpdateSchema.parse(await readJson(request));
     const duplicate = await prisma.product.findFirst({
       where: {
         id: { not: id },
@@ -30,6 +30,11 @@ export async function PATCH(request: Request, context: RouteContext) {
       return jsonError("Ya existe un producto con ese codigo o nombre.", 409);
     }
 
+    const current = await prisma.product.findUnique({ where: { id } });
+    if (!current) {
+      return jsonError("El producto no existe.", 404);
+    }
+
     const product = await prisma.product.update({
       where: { id },
       data: {
@@ -38,12 +43,11 @@ export async function PATCH(request: Request, context: RouteContext) {
         category: payload.category,
         description: payload.description || null,
         price: payload.price,
-        stock: payload.stock,
         minStock: payload.minStock,
         status:
           payload.status === ProductStatus.INACTIVE
             ? ProductStatus.INACTIVE
-            : getProductStatus(payload.stock, payload.minStock),
+            : getProductStatus(current.stock, payload.minStock),
         supplierId: payload.supplierId || null,
       },
       include: { supplier: true },

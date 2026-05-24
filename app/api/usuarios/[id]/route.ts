@@ -3,6 +3,7 @@ import { Role, Status } from "@/lib/generated/prisma/client";
 import { handleRouteError, jsonError, readJson } from "@/lib/api";
 import { requireApiSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { userPatchSchema } from "@/lib/validations/user";
 
 export const runtime = "nodejs";
@@ -23,6 +24,33 @@ export async function PATCH(request: Request, context: RouteContext) {
       return jsonError("No puedes inactivar tu propio usuario.", 422);
     }
 
+    const current = await prisma.userProfile.findUnique({ where: { id } });
+    if (!current) {
+      return jsonError("El usuario no existe.", 404);
+    }
+
+    if (payload.email && payload.email !== current.email) {
+      const duplicate = await prisma.userProfile.findUnique({
+        where: { email: payload.email },
+      });
+
+      if (duplicate) {
+        return jsonError("Ya existe un usuario con ese correo.", 409);
+      }
+    }
+
+    if (payload.name || payload.email) {
+      const supabase = createSupabaseAdminClient();
+      const { error } = await supabase.auth.admin.updateUserById(current.authUserId, {
+        email: payload.email ?? current.email,
+        user_metadata: { name: payload.name ?? current.name },
+      });
+
+      if (error) {
+        return jsonError(error.message, 400);
+      }
+    }
+
     const user = await prisma.userProfile.update({
       where: { id },
       data: payload,
@@ -30,6 +58,10 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return NextResponse.json({ user });
   } catch (error) {
+    if (error instanceof Error && error.message === "SUPABASE_ADMIN_NOT_CONFIGURED") {
+      return jsonError("Falta configurar SUPABASE_SERVICE_ROLE_KEY.", 500);
+    }
+
     return handleRouteError(error);
   }
 }

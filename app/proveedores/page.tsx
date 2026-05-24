@@ -23,6 +23,7 @@ export default async function SuppliersPage() {
         initialSuppliers={suppliers.map((supplier) => ({
           id: supplier.id,
           name: supplier.name,
+          nit: supplier.nit ?? "",
           phone: supplier.phone,
           email: supplier.email,
           address: supplier.address,

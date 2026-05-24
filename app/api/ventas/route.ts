@@ -102,6 +102,9 @@ export async function POST(request: Request) {
         data: {
           saleNumber: buildSaleNumber(),
           userId: auth.profile.id,
+          customerName: payload.customerName,
+          customerDocument: payload.customerDocument || null,
+          customerPhone: payload.customerPhone || null,
           total,
           details: {
             create: normalizedItems.map((item) => {

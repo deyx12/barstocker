@@ -213,12 +213,24 @@ export function ProductsTable({
   }
 
   async function onSubmit(values: ProductFormValues) {
+    const payload = editing
+      ? {
+          code: values.code,
+          name: values.name,
+          category: values.category,
+          description: values.description,
+          price: values.price,
+          minStock: values.minStock,
+          status: values.status,
+          supplierId: values.supplierId,
+        }
+      : values;
     const response = await fetch(
       editing ? `/api/productos/${editing.id}` : "/api/productos",
       {
         method: editing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       },
     );
     const data = await response.json();
@@ -239,6 +251,14 @@ export function ProductsTable({
   }
 
   async function deleteProduct(product: ProductRow) {
+    const confirmed = window.confirm(
+      `Confirma que deseas eliminar o inactivar el producto "${product.name}".`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     const response = await fetch(`/api/productos/${product.id}`, {
       method: "DELETE",
     });
@@ -390,7 +410,13 @@ export function ProductsTable({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stock">Stock</Label>
-                <Input id="stock" type="number" min="0" {...register("stock")} />
+                {editing ? (
+                  <div className="flex h-10 items-center rounded-md border bg-slate-100 px-3 text-sm text-muted-foreground">
+                    {editing.stock}
+                  </div>
+                ) : (
+                  <Input id="stock" type="number" min="0" {...register("stock")} />
+                )}
                 <FieldError message={errors.stock?.message} />
               </div>
               <div className="space-y-2">

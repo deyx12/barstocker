@@ -59,6 +59,7 @@ model UserProfile {
 model Supplier {
   id        String   @id @default(uuid())
   name      String   @unique
+  nit       String?  @unique
   phone     String
   email     String   @unique
   address   String
@@ -95,12 +96,15 @@ model Product {
 }
 
 model Sale {
-  id         String     @id @default(uuid())
-  saleNumber String     @unique
-  userId     String
-  total      Decimal    @db.Decimal(10, 2)
-  status     SaleStatus @default(COMPLETED)
-  createdAt  DateTime   @default(now())
+  id               String     @id @default(uuid())
+  saleNumber       String     @unique
+  userId           String
+  customerName     String?
+  customerDocument String?
+  customerPhone    String?
+  total            Decimal    @db.Decimal(10, 2)
+  status           SaleStatus @default(COMPLETED)
+  createdAt        DateTime   @default(now())
 
   user    UserProfile  @relation(fields: [userId], references: [id], onDelete: Restrict)
   details SaleDetail[]
