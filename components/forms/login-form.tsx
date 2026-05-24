@@ -28,7 +28,7 @@ export function LoginForm() {
   const inactiveFromUrl = searchParams.get("error") === "inactive";
   const [serverError, setServerError] = useState<string | null>(
     inactiveFromUrl
-      ? "Tu cuenta esta inactiva. Para activarla debes comunicarte con el administrador."
+      ? "Tu cuenta esta inactiva. Para activarla debes comunicarte con el administrador"
       : null,
   );
   const [inactiveDialogOpen, setInactiveDialogOpen] = useState(inactiveFromUrl);
@@ -67,8 +67,8 @@ export function LoginForm() {
     if (error) {
       const message =
         error.message === "Invalid login credentials"
-          ? "Correo o contrasena incorrectos."
-          : "No pudimos iniciar sesion. Revisa tus credenciales.";
+          ? "Correo o contraseña incorrectos."
+          : "No pudimos iniciar sesión. Revisa tus credenciales.";
       setServerError(message);
       toast.error(message);
       return;
