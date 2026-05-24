@@ -9,11 +9,13 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  Moon,
   Package,
   UserCircle,
   Search,
   Loader2,
   ShoppingCart,
+  Sun,
   Truck,
   Users,
   Wine,
@@ -69,6 +71,17 @@ const navItems = [
   roles: AppUser["role"][];
 }>;
 
+function getPreferredDarkMode() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const storedTheme = window.localStorage.getItem("barstocker-theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+  return storedTheme ? storedTheme === "dark" : prefersDark;
+}
+
 export function AppShell({ user, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -78,6 +91,7 @@ export function AppShell({ user, children }: AppShellProps) {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const visibleNav = navItems.filter((item) => item.roles.includes(user.role));
   const initials = user.name
     .split(" ")
@@ -91,6 +105,24 @@ export function AppShell({ user, children }: AppShellProps) {
     toast.success("Sesion cerrada correctamente.");
     router.replace("/login");
     router.refresh();
+  }
+
+  useEffect(() => {
+    const enabled = getPreferredDarkMode();
+
+    document.documentElement.classList.toggle("dark", enabled);
+    const frame = window.requestAnimationFrame(() => setIsDarkMode(enabled));
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  function toggleColorMode() {
+    setIsDarkMode((current) => {
+      const next = !current;
+      document.documentElement.classList.toggle("dark", next);
+      window.localStorage.setItem("barstocker-theme", next ? "dark" : "light");
+      return next;
+    });
   }
 
   useEffect(() => {
@@ -157,8 +189,8 @@ export function AppShell({ user, children }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-white md:flex md:flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-border bg-white dark:bg-slate-900 md:flex md:flex-col">
         <div className="flex h-16 items-center gap-3 px-5">
           <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Wine className="size-5" aria-hidden="true" />
@@ -179,7 +211,7 @@ export function AppShell({ user, children }: AppShellProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-accent hover:text-accent-foreground",
+                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-accent hover:text-accent-foreground dark:text-slate-300",
                   active && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
                 )}
               >
@@ -189,7 +221,21 @@ export function AppShell({ user, children }: AppShellProps) {
             );
           })}
         </nav>
-        <div className="border-t p-4">
+        <div className="space-y-3 border-t p-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start"
+            onClick={toggleColorMode}
+            aria-label={isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          >
+            {isDarkMode ? (
+              <Sun className="size-4" aria-hidden="true" />
+            ) : (
+              <Moon className="size-4" aria-hidden="true" />
+            )}
+            {isDarkMode ? "Modo claro" : "Modo oscuro"}
+          </Button>
           <p className="text-xs uppercase text-muted-foreground">Rol activo</p>
           <p className="text-sm font-semibold">
             {user.role === "ADMIN" ? "Administrador" : "Vendedor"}
@@ -198,7 +244,7 @@ export function AppShell({ user, children }: AppShellProps) {
       </aside>
 
       <div className="md:pl-64">
-        <header className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur">
+        <header className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur dark:bg-slate-900/95">
           <div className="flex min-h-16 flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-6">
             <div className="flex items-center justify-between gap-3 md:hidden">
               <Link href="/dashboard" className="flex items-center gap-2 font-bold">
@@ -240,7 +286,7 @@ export function AppShell({ user, children }: AppShellProps) {
                 />
               ) : null}
               {searchOpen && globalQuery.trim().length >= 2 ? (
-                <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-lg border bg-white shadow-lg">
+                <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-lg border bg-white shadow-lg dark:bg-slate-900">
                   {searchResults.length ? (
                     <div className="max-h-96 overflow-y-auto p-2">
                       {searchResults.map((result) => (

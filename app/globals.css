@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #172033;
@@ -21,6 +23,29 @@
   --input: #dbe3ef;
   --ring: #2563eb;
   --radius: 0.5rem;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0f172a;
+  --foreground: #e5edf7;
+  --card: #111827;
+  --card-foreground: #e5edf7;
+  --popover: #111827;
+  --popover-foreground: #e5edf7;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #1e293b;
+  --secondary-foreground: #dbeafe;
+  --muted: #172033;
+  --muted-foreground: #94a3b8;
+  --accent: #1e3a8a;
+  --accent-foreground: #eff6ff;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #26344d;
+  --input: #334155;
+  --ring: #60a5fa;
 }
 
 @theme inline {
@@ -70,4 +95,61 @@ textarea {
 ::selection {
   background: #bfdbfe;
   color: #172033;
+}
+
+.dark .bg-white {
+  background-color: #111827;
+}
+
+.dark .bg-slate-50 {
+  background-color: #0f172a;
+}
+
+.dark .bg-slate-100 {
+  background-color: #1e293b;
+}
+
+.dark .bg-blue-50 {
+  background-color: #172554;
+}
+
+.dark .text-slate-950 {
+  color: #f8fafc;
+}
+
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700 {
+  color: #e2e8f0;
+}
+
+.dark .text-slate-600 {
+  color: #cbd5e1;
+}
+
+.dark .text-slate-500 {
+  color: #94a3b8;
+}
+
+.dark .text-blue-700,
+.dark .text-blue-800 {
+  color: #bfdbfe;
+}
+
+.dark .border-blue-100,
+.dark .border-slate-200 {
+  border-color: #26344d;
+}
+
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg {
+  box-shadow:
+    0 18px 30px -18px rgb(0 0 0 / 0.72),
+    0 8px 18px -12px rgb(0 0 0 / 0.55);
+}
+
+.dark ::selection {
+  background: #1d4ed8;
+  color: #ffffff;
 }
