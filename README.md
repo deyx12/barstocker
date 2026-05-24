@@ -1,4 +1,5 @@
-# BarStocker Web
+# Repositorio de Deyby Garzón
+# BarStocker Web 
 
 Sistema web para gestionar inventario, ventas, proveedores, usuarios y reportes de bares. Incluye autenticacion con Supabase Auth, control de acceso por roles y reglas de negocio para descontar inventario al confirmar ventas.
 
@@ -16,19 +17,6 @@ Sistema web para gestionar inventario, ventas, proveedores, usuarios y reportes 
 - Playwright
 - Vercel
 
-## Variables De Entorno
-
-Copia `.env.example` a `.env` y completa:
-
-```env
-DATABASE_URL=
-DIRECT_URL=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-```
-
-`DATABASE_URL` debe apuntar a PostgreSQL de Supabase. `SUPABASE_SERVICE_ROLE_KEY` permite que el seed cree los usuarios de Auth de prueba; si no la configuras, crea esos usuarios manualmente en Supabase Auth.
 
 ## Instalacion
 
@@ -99,25 +87,12 @@ npm run test:e2e
 
 Las pruebas e2e de login/productos se omiten automaticamente si faltan `NEXT_PUBLIC_SUPABASE_URL` o `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Puedes sobreescribir credenciales con `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD`.
 
-## Despliegue En Vercel
-
-1. Crea un proyecto en Vercel conectado al repositorio.
-2. Configura las variables de entorno de Supabase y PostgreSQL.
-3. Ejecuta migraciones contra Supabase con `npm run db:deploy`.
-4. Ejecuta el seed una vez con `npm run db:seed` si necesitas datos iniciales.
-5. Usa el comando de build por defecto del proyecto:
-
-```bash
-npm run build
-```
-
 ## Roles
 
 - `ADMIN`: acceso total a dashboard, productos, inventario, ventas, historial, proveedores, reportes y usuarios.
 - `VENDEDOR`: dashboard limitado, productos en lectura, inventario en lectura, ventas e historial. No accede a usuarios, proveedores ni reportes.
 
-## Supuestos De Primera Version
-
+## Caracteristicas
 - La moneda visual es COP.
 - Los usuarios se autentican en Supabase Auth y se administran como perfiles en `UserProfile`.
 - No se eliminan usuarios; se inactivan.
