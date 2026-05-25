@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Download, Minus, Plus, ReceiptText, ShoppingCart } from "lucide-react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -85,16 +85,12 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
     name: "items",
   });
   const watchedItems = watch("items");
-  const total = useMemo(
-    () =>
-      calculateSaleTotal(
-        watchedItems.map((item) => ({
-          productId: item.productId,
-          quantity: Number(item.quantity) || 0,
-        })),
-        products,
-      ),
-    [products, watchedItems],
+  const total = calculateSaleTotal(
+    watchedItems.map((item) => ({
+      productId: item.productId,
+      quantity: Number(item.quantity) || 0,
+    })),
+    products,
   );
 
   async function onSubmit(values: SaleFormValues) {
