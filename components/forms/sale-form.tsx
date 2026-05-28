@@ -2,9 +2,18 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Download, Minus, Plus, ReceiptText, ShoppingCart } from "lucide-react";
+import {
+  Check,
+  Download,
+  Minus,
+  Plus,
+  ReceiptText,
+  RotateCcw,
+  ShoppingCart,
+} from "lucide-react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { FieldError } from "@/components/field-error";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +51,7 @@ type AvailableProduct = {
 };
 
 type Receipt = {
+  id: string;
   saleNumber: string;
   customerName: string;
   customerDocument: string | null;
@@ -50,6 +60,7 @@ type Receipt = {
   createdAt: string;
   details: Array<{
     id: string;
+    productId: string;
     quantity: number;
     unitPrice: number;
     subtotal: number;
@@ -63,6 +74,8 @@ type Receipt = {
 export function SaleForm({ initialProducts }: { initialProducts: AvailableProduct[] }) {
   const [products, setProducts] = useState(initialProducts);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [reverseDialogOpen, setReverseDialogOpen] = useState(false);
+  const [isReversing, setIsReversing] = useState(false);
   const {
     control,
     handleSubmit,
@@ -121,6 +134,7 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
 
     const sale = data.sale;
     setReceipt({
+      id: sale.id,
       saleNumber: sale.saleNumber,
       customerName: sale.customerName,
       customerDocument: sale.customerDocument,
@@ -130,12 +144,14 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
       details: sale.details.map(
         (detail: {
           id: string;
+          productId: string;
           quantity: number;
           unitPrice: string | number;
           subtotal: string | number;
           product: { name: string; code: string };
         }) => ({
           id: detail.id,
+          productId: detail.productId,
           quantity: detail.quantity,
           unitPrice: Number(detail.unitPrice),
           subtotal: Number(detail.subtotal),
@@ -160,6 +176,45 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
       items: [{ productId: "", quantity: 1 }],
     });
     toast.success("Venta registrada e inventario actualizado.");
+  }
+
+  async function reverseSale() {
+    if (!receipt) return;
+
+    setIsReversing(true);
+    try {
+      const response = await fetch(`/api/ventas/${receipt.id}`, {
+        method: "PATCH",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.message || "No se pudo reversar la venta.");
+        return;
+      }
+
+      const sale = data.sale;
+      setProducts((current) =>
+        current.map((product) => {
+          const detail = sale.details.find(
+            (item: { productId: string; product: { stock: number } }) =>
+              item.productId === product.id,
+          );
+
+          return detail ? { ...product, stock: detail.product.stock } : product;
+        }),
+      );
+      setReceipt(null);
+      setReverseDialogOpen(false);
+      toast.success("Venta reversada e inventario restaurado.");
+    } finally {
+      setIsReversing(false);
+    }
+  }
+
+  function clearReceipt() {
+    setReceipt(null);
+    setReverseDialogOpen(false);
   }
 
   async function downloadReceiptPdf() {
@@ -251,7 +306,8 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
+    <>
+      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
       <Card>
         <CardHeader>
           <CardTitle>Registrar venta</CardTitle>
@@ -434,10 +490,25 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
                 <span>Total</span>
                 <span>{formatCurrency(receipt.total)}</span>
               </div>
-              <Button type="button" className="w-full" onClick={downloadReceiptPdf}>
-                <Download className="size-4" aria-hidden="true" />
-                Descargar comprobante PDF
-              </Button>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Button type="button" onClick={downloadReceiptPdf}>
+                  <Download className="size-4" aria-hidden="true" />
+                  Descargar PDF
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setReverseDialogOpen(true)}
+                  disabled={isReversing}
+                >
+                  <RotateCcw className="size-4" aria-hidden="true" />
+                  Reversar venta
+                </Button>
+                <Button type="button" variant="secondary" onClick={clearReceipt}>
+                  <Check className="size-4" aria-hidden="true" />
+                  Listo
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="flex min-h-72 flex-col items-center justify-center rounded-md border border-dashed text-center">
@@ -450,6 +521,19 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+
+      <ConfirmDialog
+        open={reverseDialogOpen}
+        title="Reversar venta"
+        description="La venta se marcara como cancelada y las cantidades vendidas volveran al inventario."
+        confirmText="Reversar venta"
+        isLoading={isReversing}
+        onOpenChange={(open) => {
+          if (!isReversing) setReverseDialogOpen(open);
+        }}
+        onConfirm={reverseSale}
+      />
+    </>
   );
 }
