@@ -34,6 +34,7 @@ export type SaleHistoryRow = {
   saleNumber: string;
   customerName: string;
   customerDocument: string | null;
+  customerPhone: string | null;
   sellerId: string;
   sellerName: string;
   total: number;
@@ -82,7 +83,8 @@ export function SalesHistoryTable({
         sale.saleNumber.toLowerCase().includes(normalizedQuery) ||
         sale.sellerName.toLowerCase().includes(normalizedQuery) ||
         sale.customerName.toLowerCase().includes(normalizedQuery) ||
-        (sale.customerDocument ?? "").toLowerCase().includes(normalizedQuery);
+        (sale.customerDocument ?? "").toLowerCase().includes(normalizedQuery) ||
+        (sale.customerPhone ?? "").toLowerCase().includes(normalizedQuery);
       const matchesSeller = sellerId === "ALL" || sale.sellerId === sellerId;
       const matchesStatus = status === "ALL" || sale.status === status;
       const matchesFrom = !from || date >= from;
@@ -210,6 +212,32 @@ export function SalesHistoryTable({
           </DialogHeader>
           {selectedSale ? (
             <div className="space-y-4">
+              <div className="grid gap-3 rounded-lg border bg-slate-50 p-4 text-sm sm:grid-cols-2">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
+                    Cliente
+                  </p>
+                  <p className="mt-1 font-semibold">
+                    {selectedSale.customerName || "No registrado"}
+                  </p>
+                  <p className="text-muted-foreground">
+                    Documento/NIT: {selectedSale.customerDocument || "No registrado"}
+                  </p>
+                  <p className="text-muted-foreground">
+                    Telefono: {selectedSale.customerPhone || "No registrado"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-normal text-muted-foreground">
+                    Vendedor
+                  </p>
+                  <p className="mt-1 font-semibold">{selectedSale.sellerName}</p>
+                  <div className="mt-1 flex items-center gap-2 text-muted-foreground">
+                    <span>Estado:</span>
+                    <StatusBadge status={selectedSale.status} />
+                  </div>
+                </div>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>

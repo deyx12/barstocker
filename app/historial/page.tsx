@@ -41,6 +41,7 @@ export default async function SalesHistoryPage({ searchParams }: SalesHistoryPag
           saleNumber: sale.saleNumber,
           customerName: sale.customerName ?? "",
           customerDocument: sale.customerDocument,
+          customerPhone: sale.customerPhone,
           sellerId: sale.userId,
           sellerName: sale.user.name,
           total: Number(sale.total),
