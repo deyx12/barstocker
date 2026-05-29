@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Check,
+  ChevronDown,
   Download,
   Minus,
   Plus,
@@ -19,13 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -70,6 +64,151 @@ type Receipt = {
     };
   }>;
 };
+
+function getProductLabel(product: AvailableProduct) {
+  return `${product.code} - ${product.name} (${product.stock})`;
+}
+
+type ProductComboboxProps = {
+  id: string;
+  value: string;
+  products: AvailableProduct[];
+  onChange: (value: string) => void;
+};
+
+function ProductCombobox({
+  id,
+  value,
+  products,
+  onChange,
+}: ProductComboboxProps) {
+  const selectedProduct = products.find((product) => product.id === value);
+  const selectedLabel = selectedProduct ? getProductLabel(selectedProduct) : "";
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const availableProducts = useMemo(
+    () => products.filter((product) => product.stock > 0),
+    [products],
+  );
+  const filteredProducts = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return availableProducts;
+    }
+
+    return availableProducts.filter((product) =>
+      `${product.code} ${product.name}`.toLowerCase().includes(normalizedQuery),
+    );
+  }, [availableProducts, query]);
+  const inputValue = open ? query : selectedLabel || query;
+
+  function selectProduct(product: AvailableProduct) {
+    onChange(product.id);
+    setQuery("");
+    setOpen(false);
+  }
+
+  function handleQueryChange(nextQuery: string) {
+    setQuery(nextQuery);
+    setOpen(true);
+
+    if (selectedProduct && nextQuery !== selectedLabel) {
+      onChange("");
+    }
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter" && open && filteredProducts.length) {
+      event.preventDefault();
+      selectProduct(filteredProducts[0]);
+    }
+
+    if (event.key === "Escape") {
+      setOpen(false);
+      setQuery("");
+    }
+  }
+
+  return (
+    <div
+      className="relative"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setOpen(false);
+          if (selectedProduct) {
+            setQuery("");
+          }
+        }
+      }}
+    >
+      <div className="relative">
+        <Input
+          id={id}
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-options`}
+          aria-autocomplete="list"
+          autoComplete="off"
+          placeholder="Buscar o seleccionar producto"
+          value={inputValue}
+          onChange={(event) => handleQueryChange(event.target.value)}
+          onFocus={() => {
+            setQuery("");
+            setOpen(true);
+          }}
+          onKeyDown={handleKeyDown}
+          className="pr-9"
+        />
+        <button
+          type="button"
+          aria-label="Abrir productos"
+          className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
+          onClick={() => setOpen((current) => !current)}
+        >
+          <ChevronDown className="size-4" aria-hidden="true" />
+        </button>
+      </div>
+
+      {open ? (
+        <div
+          id={`${id}-options`}
+          role="listbox"
+          className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+        >
+          {filteredProducts.length ? (
+            filteredProducts.map((product) => (
+              <button
+                key={product.id}
+                type="button"
+                role="option"
+                aria-selected={product.id === value}
+                className="flex w-full items-center justify-between gap-3 rounded-sm px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus-visible:outline-none"
+                onClick={() => selectProduct(product)}
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-medium">
+                    {product.code} - {product.name}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Stock: {product.stock}
+                  </span>
+                </span>
+                {product.id === value ? (
+                  <Check className="size-4 shrink-0" aria-hidden="true" />
+                ) : null}
+              </button>
+            ))
+          ) : (
+            <p className="px-3 py-2 text-sm text-muted-foreground">
+              No hay productos coincidentes.
+            </p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function SaleForm({ initialProducts }: { initialProducts: AvailableProduct[] }) {
   const [products, setProducts] = useState(initialProducts);
@@ -348,31 +487,17 @@ export function SaleForm({ initialProducts }: { initialProducts: AvailableProduc
                     className="grid gap-3 rounded-lg border bg-slate-50 p-3 lg:grid-cols-[1fr_140px_140px_auto]"
                   >
                     <div className="space-y-2">
-                      <Label>Producto</Label>
+                      <Label htmlFor={`product-${field.id}`}>Producto</Label>
                       <Controller
                         control={control}
                         name={`items.${index}.productId`}
                         render={({ field: productField }) => (
-                          <Select
-                            value={productField.value || "NONE"}
-                            onValueChange={(value) =>
-                              productField.onChange(value === "NONE" ? "" : value)
-                            }
-                          >
-                            <SelectTrigger aria-label={`Seleccionar producto ${index + 1}`}>
-                              <SelectValue placeholder="Selecciona producto" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="NONE">Selecciona producto</SelectItem>
-                              {products
-                                .filter((item) => item.stock > 0)
-                                .map((item) => (
-                                  <SelectItem key={item.id} value={item.id}>
-                                    {item.code} - {item.name} ({item.stock})
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
+                          <ProductCombobox
+                            id={`product-${field.id}`}
+                            products={products}
+                            value={productField.value || ""}
+                            onChange={productField.onChange}
+                          />
                         )}
                       />
                       <FieldError message={errors.items?.[index]?.productId?.message} />
